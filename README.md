@@ -1,6 +1,6 @@
-# Find Mentor
+# tsTools
 
-综合信息查询系统（LDAP/优惠券/随材/摸底测试）
+技术支持查询系统（LDAP/优惠券/随材/摸底测试）
 
 ## 功能特点
 
@@ -22,8 +22,8 @@
 
 1. 克隆仓库
    ```bash
-   git clone https://github.com/your-repo/findMentor-v2.git
-   cd findMentor-v2
+   git clone https://github.com/vicorrr/tsTools.git
+   cd tsTools
    python app.py
    ```
 2. 打开Chrome浏览器，访问：
@@ -39,4 +39,4 @@
 ## 注意事项
 
 - 确保已安装Chrome浏览器
-- 文件夹内包含Chrome驱动，如版本不对，可自行下载
+- 需下载Chrome驱动
