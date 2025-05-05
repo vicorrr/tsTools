@@ -23,3 +23,6 @@ login_info.pkl
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# 新增规则
+chromedriver
