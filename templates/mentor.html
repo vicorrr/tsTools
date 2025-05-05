@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block title %}查询上级{% endblock %}
+{% block content %}
+<div class="container mt-5">
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="input-group mb-3">
+                <div class="mb-4">  <!-- 添加mb-4类增加下边距 -->
+                    <input type="text" id="ldap" name="ldap" placeholder="请输入老师LDAP" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                </div>
+                <button type="button" id="searchBtn" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30 transition-all flex items-center mt-4">  <!-- 添加mt-4类增加上边距 -->
+                    <i class="fa fa-search mr-2"></i> 查询
+                </button>
+            </div>
+            <!-- 修改加载指示器类名避免冲突 -->
+            <div id="loadingIndicator" class="loading-indicator">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">正在查询中...</p>
+            </div>
+            <!-- 修改错误信息容器类名 -->
+            <div id="errorMessage" class="error-message-container"></div>
+            <div id="resultContainer" class="result-container">
+                <div class="result-text"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .loading-indicator {
+        display: none;
+        text-align: center;
+        margin: 20px 0;
+    }
+    .error-message-container {
+        color: #dc3545;
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid #dc3545;
+        border-radius: 5px;
+        background-color: #f8d7da;
+        display: none;
+    }
+    .result-container {
+        margin-top: 20px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        display: none;
+    }
+    .result-text {
+        white-space: pre-line;
+        font-family: monospace;
+        font-size: 16px;  /* 新增字体大小设置 */
+        line-height: 1.6; /* 新增行高设置 */
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 更新元素选择器
+        const ldapInput = document.getElementById('ldap');
+        const searchBtn = document.getElementById('searchBtn');
+        const loadingDiv = document.getElementById('loadingIndicator');
+        const errorDiv = document.getElementById('errorMessage');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultText = document.querySelector('.result-text');
+        
+        let searchTimeout;
+
+        function resetSearchState() {
+            clearTimeout(searchTimeout);
+            loadingDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            resultContainer.style.display = 'none';
+        }
+
+        function showError(message) {
+            resetSearchState();
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function search() {
+            const ldap = ldapInput.value.trim();
+            if (!ldap) {
+                showError('请输入LDAP');
+                return;
+            }
+
+            // 重置状态
+            resetSearchState();
+            loadingDiv.style.display = 'block';
+
+            // 设置超时（10秒）
+            searchTimeout = setTimeout(() => {
+                showError('查询超时，请重试');
+            }, 10000);
+
+            // 发送请求
+            fetch('/search_mentor', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `ldap=${encodeURIComponent(ldap)}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                clearTimeout(searchTimeout);
+                loadingDiv.style.display = 'none';
+                
+                if (data.success) {
+                    resultText.textContent = data.display_text;
+                    resultContainer.style.display = 'block';
+                } else {
+                    showError(data.error || '查询失败');
+                }
+            })
+            .catch(error => {
+                clearTimeout(searchTimeout);
+                loadingDiv.style.display = 'none';
+                showError(`查询失败: ${error.message}`);
+                console.error('Error:', error);
+            });
+        }
+
+        // 绑定搜索按钮点击事件
+        searchBtn.addEventListener('click', search);
+
+        // 绑定回车键事件
+        ldapInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                search();
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}查询摸底测试{% endblock %}
+{% block content %}
+<div class="container mt-5">
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="input-group mb-3">
+                <div class="mb-4">  <!-- 添加mb-4类增加下边距 -->
+                    <input type="text" id="lessonId" name="lessonId" placeholder="请输入班课ID" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                </div>
+                <button type="button" id="searchBtn" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30 transition-all flex items-center mt-4">  <!-- 添加mt-4类增加上边距 -->
+                    <i class="fa fa-search mr-2"></i> 查询
+                </button>
+            </div>
+            
+            <div id="loadingIndicator" class="loading-indicator">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">正在查询中...</p>
+            </div>
+            <div id="errorMessage" class="error-message-container"></div>
+            <div id="resultContainer" class="result-container">
+                <div class="result-text"></div>
+          </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .loading-indicator {
+        display: none;
+        text-align: center;
+        margin: 20px 0;
+    }
+    .error-message-container {
+        color: #dc3545;
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid #dc3545;
+        border-radius: 5px;
+        background-color: #f8d7da;
+        display: none;
+    }
+    .result-container {
+        margin-top: 20px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        display: none;
+    }
+    .result-text {
+        white-space: pre-line;
+        font-family: monospace;
+        font-size: 16px;  /* 新增字体大小设置 */
+        line-height: 1.6; /* 新增行高设置 */
+    }
+    .result-text a {
+        color: #2563eb;
+        text-decoration: underline;
+    }
+    .result-text a:hover {
+        color: #1d4ed8;
+        text-decoration: none;
+    }
+    .result-item {
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: white;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 更新元素选择器
+        const lessonInput = document.getElementById('lessonId');
+        const searchBtn = document.getElementById('searchBtn');
+        const loadingDiv = document.getElementById('loadingIndicator');
+        const errorDiv = document.getElementById('errorMessage');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultText = document.querySelector('.result-text');
+        
+        let searchTimeout;
+
+        function resetSearchState() {
+            clearTimeout(searchTimeout);
+            loadingDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            resultContainer.style.display = 'none';
+        }
+
+        function showError(message) {
+            resetSearchState();
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function search() {
+            const lessonId = lessonInput.value.trim();
+            if (!lessonId) {
+                showError('请输入班课ID');
+                return;
+            }
+
+            // 重置状态
+            resetSearchState();
+            loadingDiv.style.display = 'block';
+
+            // 设置超时（30秒）
+            searchTimeout = setTimeout(() => {
+                showError('查询超时，请重试');
+            }, 30000);
+
+            // 发送请求
+            fetch('/search_exam', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `lessonId=${encodeURIComponent(lessonId)}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                clearTimeout(searchTimeout);
+                loadingDiv.style.display = 'none';
+                
+                if (!data) {
+                    throw new Error('空响应');
+                }
+
+                if (data?.success) {
+                    // 清空现有结果
+                    while (resultContainer.firstChild) {
+                        resultContainer.removeChild(resultContainer.firstChild);
+                    }
+
+                    // 创建标题元素
+                    const titleElement = document.createElement('div');
+                    titleElement.className = 'text-lg font-medium mb-4';
+                    titleElement.textContent = `找到 ${data.count} 个匹配的测试`;
+                    resultContainer.appendChild(titleElement);
+
+                    // 遍历并创建每个匹配的元素
+                    data.matches.forEach(match => {
+                        const matchDiv = document.createElement('div');
+                        matchDiv.className = 'result-item';
+
+                        const textNode = document.createElement('div');
+                        textNode.className = 'text-gray-700';
+                        textNode.textContent = `匹配的摸底测试ID为: ${match.exam_id}`;
+
+                        const linkElement = document.createElement('a');
+                        linkElement.href = match.link;
+                        linkElement.className = 'text-blue-600 hover:text-blue-800 ml-2';
+                        linkElement.textContent = '查看详情';
+                        linkElement.target = '_blank';
+
+                        textNode.appendChild(linkElement);
+                        matchDiv.appendChild(textNode);
+                        resultContainer.appendChild(matchDiv);
+                    });
+
+                    resultContainer.style.display = 'block';
+                } else {
+                    showError(data?.error || '查询失败');
+                }
+            })
+            .catch(error => {
+                clearTimeout(searchTimeout);
+                loadingDiv.style.display = 'none';
+                if (error instanceof SyntaxError) {
+                    showError('查询失败: 数据解析错误');
+                } else {
+                    showError(`查询失败: ${error.message}`);
+                }
+                console.error('Error:', error);
+            });
+        }
+
+        // 绑定搜索按钮点击事件
+        searchBtn.addEventListener('click', search);
+
+        // 绑定回车键事件
+        lessonInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                search();
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}首页{% endblock %}
+
+{% block content %}
+<div class="prose max-w-none">
+    <h1 class="text-3xl font-bold text-primary mb-6">欢迎使用技术支持工具</h1>
+    <p class="text-lg text-gray-700 mb-4">请通过左侧菜单选择您需要的功能：</p>
+    <ul class="space-y-3">
+        <li class="flex items-center">
+            <i class="fa fa-users w-6 text-primary"></i>
+            <span class="ml-2">查询上级 - 输入LDAP查询上级信息</span>
+        </li>
+        <li class="flex items-center">
+            <i class="fa fa-box-open w-6 text-secondary"></i>
+            <span class="ml-2">查询随材运单 - </span><a href="https://confluence.zhenguanyu.com/pages/viewpage.action?pageId=328509918" target="_blank" class="text-blue-600">订单上没有运单的原因以及处理 SOP</a>
+        </li>
+        <li class="flex items-center">
+            <i class="fa fa-box-open w-6 text-secondary"></i>
+            <span class="ml-2">查询优惠券 - </span><a href="https://confluence.zhenguanyu.com/pages/viewpage.action?pageId=420579189" target="_blank" class="text-blue-600">优惠券无法使用问题处理 SOP</a>
+        </li>
+        <li class="flex items-center">
+            <i class="fa fa-file-pen w-6 text-purple-500"></i>
+            <span class="ml-2">摸底测试 - 查询班课绑定的摸底测试</span>
+        </li>
+    </ul>
+</div>
+{% endblock %}

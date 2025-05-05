@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技术支持工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#0FC6C2',
+                        neutral: '#F2F3F5',
+                        dark: '#1D2129',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .sidebar-active {
+                @apply bg-primary/10 text-primary border-l-4 border-primary;
+            }
+            .transition-sidebar {
+                transition: all 0.3s ease;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 text-dark">
+    <!-- 左侧固定菜单栏 -->
+    <div class="fixed top-0 left-0 h-full w-64 bg-white shadow-lg z-10 transform transition-all duration-300 lg:translate-x-0" id="sidebar">
+        <div class="flex items-center justify-between p-4 border-b">
+            <a href="/" class="text-xl font-bold text-primary hover:text-primary/80">技术支持工具</a>
+            <button id="sidebarToggle" class="lg:hidden text-gray-500 hover:text-primary">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <nav class="mt-4 px-3">
+            <ul class="space-y-1">
+                
+                <li>
+                    <a href="/mentor" class="flex items-center px-4 py-3 rounded-lg transition-sidebar">
+                        <i class="fa fa-users w-6 text-center"></i>
+                        <span class="ml-3">查询上级</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/materials" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100 transition-sidebar">
+                        <i class="fa fa-box-open w-6 text-center"></i>
+                        <span class="ml-3">订单无运单</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/coupons" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100 transition-sidebar">
+                        <i class="fa fa-ticket w-6 text-center"></i>
+                        <span class="ml-3">优惠券无法使用</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/baseExam" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100 transition-sidebar">
+                        <i class="fa fa-file-pen w-6 text-center"></i>
+                        <span class="ml-3">查询摸底测试</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- 移动端菜单遮罩 -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-5 lg:hidden hidden"></div>
+
+    <!-- 主内容区域 -->
+    <main class="min-h-screen lg:ml-64 transition-all duration-300">
+        <!-- 顶部导航栏 -->
+        <header class="bg-white shadow-sm sticky top-0 z-10">
+            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                <button id="mobileSidebarToggle" class="lg:hidden text-gray-500 hover:text-primary">
+                    <i class="fa fa-bars"></i>
+                </button>
+                <h2 class="text-xl font-semibold">{% block title %}查询上级{% endblock %}</h2>
+            </div>
+        </header>
+
+        <!-- 内容区域 -->
+        <div class="container mx-auto px-4 py-6">
+            {% block content %}{% endblock %}
+        </div>
+
+        <!-- 页脚 -->
+        <footer class="bg-white py-4 mt-auto">
+            <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+                <p>© 2025 技术支持工具 </p>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        // 侧边栏切换逻辑
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            }
+
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            mobileSidebarToggle.addEventListener('click', toggleSidebar);
+            overlay.addEventListener('click', toggleSidebar);
+
+            // 高亮当前激活的菜单项
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('nav a');
+            navLinks.forEach(link => {
+                if (currentPath !== '/' && link.getAttribute('href') === currentPath) {
+                    link.classList.add('sidebar-active');
+                } else {
+                    link.classList.remove('sidebar-active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

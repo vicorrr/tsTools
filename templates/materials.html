@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}订单无运单{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6 transform transition-all duration-300 hover:shadow-lg">
+        <h3 class="text-lg font-semibold mb-4">查询随材运单</h3>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="input-group mb-3">
+                    <div class="mb-4">
+                        <input type="text" id="userId" name="userId" placeholder="请输入用户ID" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                    </div>
+                    <div class="mb-4">
+                        <input type="text" id="orderId" name="orderId" placeholder="请输入订单ID" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                    </div>
+                    <button type="button" id="queryBtn" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30 transition-all flex items-center mt-4">
+                        <i class="fa fa-search mr-2"></i> 查询
+                    </button>
+                </div>
+                
+                <!-- 加载指示器 -->
+                <div id="loadingIndicator" class="loading-indicator">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">正在查询中...</p>
+                </div>
+                
+                <!-- 错误信息容器 -->
+                <div id="errorMessage" class="error-message-container"></div>
+                
+                <!-- 结果容器 -->
+                <div id="resultContainer" class="result-container">
+                    <div class="result-text"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .loading-indicator {
+        display: none;
+        text-align: center;
+        margin: 20px 0;
+    }
+    .error-message-container {
+        color: #dc3545;
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid #dc3545;
+        border-radius: 5px;
+        background-color: #f8d7da;
+        display: none;
+    }
+    .result-container {
+        margin-top: 20px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        display: none;
+    }
+    .result-text {
+        white-space: pre-line;
+        font-family: monospace;
+        font-size: 16px;
+        line-height: 1.6;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const userIdInput = document.getElementById('userId');
+        const orderIdInput = document.getElementById('orderId');
+        const queryBtn = document.getElementById('queryBtn');
+        const loadingDiv = document.getElementById('loadingIndicator');
+        const errorDiv = document.getElementById('errorMessage');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultText = document.querySelector('.result-text');
+        
+        let searchTimeout;
+
+        function resetSearchState() {
+            clearTimeout(searchTimeout);
+            loadingDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            resultContainer.style.display = 'none';
+        }
+
+        function showError(message) {
+            resetSearchState();
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function queryMaterials() {
+            const userId = userIdInput.value.trim();
+            const orderId = orderIdInput.value.trim();
+            
+            if (!userId || !orderId) {
+                showError('请输入用户ID和订单ID');
+                return;
+            }
+
+            // 重置状态
+            resetSearchState();
+            loadingDiv.style.display = 'block';
+
+            // 设置超时（10秒）
+            searchTimeout = setTimeout(() => {
+                showError('查询超时，请重试');
+            }, 10000);
+
+            // 发送请求到后端API
+            fetch('/search_materials', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `userId=${encodeURIComponent(userId)}&orderId=${encodeURIComponent(orderId)}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                clearTimeout(searchTimeout);
+                loadingDiv.style.display = 'none';
+                
+                if (data.success) {
+                    // 格式化显示结果
+                    let displayText = `用户ID: ${data.userId}\n订单ID: ${data.orderId}\n\n`;
+                    
+                    if (data.tips && data.tips.length > 0) {
+                        displayText += "随材提示信息:\n";
+                        data.tips.forEach(tip => {
+                            displayText += `- ${tip}\n\n`;
+                        });
+                    }
+                    
+                    if (data.othersInfo) {
+                        displayText += `其他信息:\n${data.othersInfo}\n`;
+                    }
+                    
+                    resultText.textContent = displayText;
+                    resultContainer.style.display = 'block';
+                } else {
+                    showError(data.error || '查询失败');
+                }
+            })
+            .catch(error => {
+                clearTimeout(searchTimeout);
+                loadingDiv.style.display = 'none';
+                showError(`查询失败: ${error.message}`);
+                console.error('Error:', error);
+            });
+        }
+
+        // 绑定查询按钮点击事件
+        queryBtn.addEventListener('click', queryMaterials);
+
+        // 绑定回车键事件
+        userIdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                queryMaterials();
+            }
+        });
+        
+        orderIdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                queryMaterials();
+            }
+        });
+    });
+</script>
+{% endblock %}
