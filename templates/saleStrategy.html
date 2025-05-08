@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block title %}查询班课售卖策略{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="bg-white rounded-xl shadow-md p-6 mb-6 transform transition-all duration-300 hover:shadow-lg">
+        <h3 class="text-lg font-semibold mb-4">查询班课售卖策略</h3>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="input-group mb-3">
+                    <div class="mb-4">
+                        <input type="text" id="userId" name="userId" placeholder="请输入用户手机号或用户ID" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                    </div>
+                    <div class="mb-4">
+                        <input type="text" id="lessonId" name="lessonId" placeholder="请输入班课ID" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
+                    </div>
+                    <button type="button" id="queryBtn" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30 transition-all flex items-center mt-4">
+                        <i class="fa fa-search mr-2"></i> 查询
+                    </button>
+                </div>
+                
+                <!-- 加载指示器 -->
+                <div id="loadingIndicator" class="loading-indicator">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">正在查询中...</p>
+                </div>
+                
+                <!-- 错误信息容器 -->
+                <div id="errorMessage" class="error-message-container"></div>
+                
+                <!-- 结果容器 -->
+                <div id="resultContainer" class="result-container">
+                    <div class="result-text"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .loading-indicator {
+        display: none;
+        text-align: center;
+        margin: 20px 0;
+    }
+    .error-message-container {
+        color: #dc3545;
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid #dc3545;
+        border-radius: 5px;
+        background-color: #f8d7da;
+        display: none;
+    }
+    .result-container {
+        margin-top: 20px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        display: none;
+    }
+    .result-text {
+        white-space: pre-line;
+        font-family: monospace;
+        font-size: 16px;
+        line-height: 1.6;
+    }
+    .collapse-box {
+        margin: 10px 0;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        padding: 5px;
+    }
+    
+    .collapse-box summary {
+        cursor: pointer;
+        color: #666;
+        padding: 8px;
+        background: #f8f9fa;
+    }
+    
+    .collapse-box summary:hover {
+        background: #f0f0f0;
+    }
+    
+    .collapse-box summary::marker {
+        content: '';
+        display: none;
+    }
+    
+    .collapse-box summary:before {
+        content: '▶';
+        display: inline-block;
+        margin-right: 8px;
+        transition: transform 0.2s;
+    }
+    
+    .collapse-box[open] summary:before {
+        transform: rotate(90deg);
+    }
+    
+    .reason-box {
+        padding: 10px;
+        background: #fff;
+        border-radius: 4px;
+        margin-top: 5px;
+    }
+    .strategy-link {
+        color: #007bff;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    
+    .strategy-link:hover {
+        color: #0056b3;
+        text-decoration: underline;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const userIdInput = document.getElementById('userId');
+        const lessonIdInput = document.getElementById('lessonId');
+        const queryBtn = document.getElementById('queryBtn');
+        const loadingDiv = document.getElementById('loadingIndicator');
+        const errorDiv = document.getElementById('errorMessage');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultText = document.querySelector('.result-text');
+        
+        let searchTimeout;
+
+        function resetSearchState() {
+            clearTimeout(searchTimeout);
+            loadingDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            resultContainer.style.display = 'none';
+        }
+
+        function showError(message) {
+            resetSearchState();
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function queryStrategy() {
+            const userId = userIdInput.value.trim();
+            const lessonId = lessonIdInput.value.trim();
+            
+            if (!userId || !lessonId) {
+                showError('请输入用户账号和班课ID');
+                return;
+            }
+
+            // 重置状态
+            resetSearchState();
+            loadingDiv.style.display = 'block';
+
+            // 设置超时（10秒）
+            searchTimeout = setTimeout(() => {
+                showError('查询超时，请重试');
+            }, 10000);
+
+            // 发送请求到后端API
+            fetch('/saleStrategy', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `userId=${encodeURIComponent(userId)}&lessonId=${encodeURIComponent(lessonId)}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                clearTimeout(searchTimeout);
+                loadingDiv.style.display = 'none';
+                
+                if (data.success) {
+                    let displayHTML = `策略ID: <a class="strategy-link" href="https://amaze.zhenguanyu.com/commerce/#/saleStrategyDispatch/lessonSaleStrategyPage?keyword=${data.saleStrategyId}" target="_blank">${data.saleStrategyId || '暂无'}</a> 
+                        策略名称: ${data.saleStrategyName || '未命名策略'} 
+                        策略详情：${data.saleStrategy_content || '暂无'} <br>
+                        ${data.displayStatus || '状态未知'} 
+                        ${data.saleStatus || '状态未知'}<br>
+                        
+                        <details class="collapse-box">
+                            <summary>查看可见原因</summary>
+                            <div class="reason-box">${data.displayReason || '暂无原因说明'}</div>
+                        </details>
+                        <details class="collapse-box">
+                            <summary>查看购买原因</summary>
+                            <div class="reason-box">${data.saleReason || '暂无原因说明'}</div>
+                        </details>`;
+                    
+                    resultText.innerHTML = displayHTML;
+                    resultContainer.style.display = 'block';
+                } else {
+                    let errorMsg = '未找到售卖策略';
+                    showError(errorMsg);
+                }
+            })
+            .catch(error => {
+                clearTimeout(searchTimeout);
+                loadingDiv.style.display = 'none';
+                showError(`查询失败: ${error.message}`);
+                console.error('Error:', error);
+            });
+        }
+
+        // 绑定查询按钮点击事件
+        queryBtn.addEventListener('click', queryStrategy);
+
+        // 绑定回车键事件
+        userIdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                queryStrategy();
+            }
+        });
+        
+        lessonIdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                queryStrategy();
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -4,6 +4,7 @@ from coupons_service import coupons_search
 from materials_service import search_materials
 from baseExam_service import exam_search
 from common_utils import get_cookies
+from saleStrategy import sale_to_User
 
 app = Flask(__name__, template_folder='templates')  # 新增模板文件夹配置
 
@@ -27,6 +28,10 @@ def coupons_page():
 @app.route('/baseExam')
 def exam_page():
     return render_template('baseExam.html')
+
+@app.route('/saleStrategy')
+def exasaleStrategy_page():
+    return render_template('saleStrategy.html')
 
 @app.route('/search_mentor', methods=['POST'])
 def search_mentor_route():
@@ -80,11 +85,20 @@ def search_exam():
         if not lessonId:
             return jsonify({'success': False, 'error': '请输入班课ID'}), 400
         result = exam_search(lessonId, cookies)
-        return jsonify(result)
+        return jsonify(result) if isinstance(result, dict) else jsonify({'success': True, 'data': result})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-
+@app.route('/saleStrategy', methods=['POST'])
+def saleStrategy():
+    try:
+        cookies = get_cookies()
+        lessonId = request.form.get('lessonId').strip()
+        userid = request.form.get('userId').strip()
+        result = sale_to_User(lessonId, userid, cookies)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
