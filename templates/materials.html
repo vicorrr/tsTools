@@ -13,9 +13,14 @@
                     <div class="mb-4">
                         <input type="text" id="orderId" name="orderId" placeholder="请输入订单ID" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
                     </div>
-                    <button type="button" id="queryBtn" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30 transition-all flex items-center mt-4">
-                        <i class="fa fa-search mr-2"></i> 查询
-                    </button>
+                    <div class="d-flex gap-4 justify-content-end w-full" style="margin-top: 1rem">  <!-- 新增flex容器 -->
+                        <button type="button" id="queryBtn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30 transition-all">
+                            <i class="fa fa-search mr-2"></i> 查询
+                        </button>
+                        <button type="button" id="resetBtn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:ring-4 focus:ring-gray-300 transition-all">
+                            <i class="fa fa-undo mr-2"></i> 重置
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- 加载指示器 -->
@@ -78,6 +83,7 @@
         const errorDiv = document.getElementById('errorMessage');
         const resultContainer = document.getElementById('resultContainer');
         const resultText = document.querySelector('.result-text');
+        const resetBtn = document.getElementById('resetBtn');
         
         let searchTimeout;
 
@@ -92,6 +98,15 @@
             resetSearchState();
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
+        }
+
+        // 新增重置函数
+        function resetForm() {
+            userIdInput.value = '';
+            orderIdInput.value = '';
+            resetSearchState();
+            errorDiv.textContent = '';
+            resultText.textContent = '';
         }
 
         function queryMaterials() {
@@ -163,6 +178,7 @@
 
         // 绑定查询按钮点击事件
         queryBtn.addEventListener('click', queryMaterials);
+        resetBtn.addEventListener('click', resetForm);  // 绑定重置按钮点击事件
 
         // 绑定回车键事件
         userIdInput.addEventListener('keypress', function(e) {

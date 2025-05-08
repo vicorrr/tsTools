@@ -12,17 +12,22 @@ def coupons_search(userId, couponId, orderIds=None, lessonIds=None, cookies=None
             # 处理多个订单ID
             orderId_list = [oid.strip() for oid in orderIds.split(',') if oid.strip()]
             apiUrl = f"https://tutor.zhenguanyu.com/tutor-uc-tool/api/users/{userId}/coupons/{couponId}/order-no-match-tips?orderIds={','.join(orderId_list)}"
+            print(apiUrl)
         else:
             # 处理多个班课ID
             lessonId_list = [lid.strip() for lid in lessonIds.split(',') if lid.strip()]
             apiUrl = f"https://tutor.zhenguanyu.com/tutor-uc-tool/api/users/{userId}/coupons/{couponId}/lesson-no-match-tips?lessonIds={','.join(lessonId_list)}"
 
         response = make_request(apiUrl, cookies)
-
-        if response.status_code != 200:
-            raise Exception(f"HTTP错误，状态码: {response.status_code}")
-
+        
         data = response.json()
+        
+        if response.status_code != 200 or not data.get('success'):
+            return {
+                'success': False,
+                'error': data.get('message', '接口请求失败')
+            }
+
         if data and data.get('success') == True:
             # 处理订单接口返回格式
             if orderIds:

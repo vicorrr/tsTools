@@ -5,13 +5,18 @@
 
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <div class="input-group mb-3">
-                <div class="mb-4">  <!-- 添加mb-4类增加下边距 -->
+            <div class="input-group mb-3">  
+                <div class="mb-4 w-full">
                     <input type="text" id="ldap" name="ldap" placeholder="请输入老师LDAP" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all">
                 </div>
-                <button type="button" id="searchBtn" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30 transition-all flex items-center mt-4">  <!-- 添加mt-4类增加上边距 -->
-                    <i class="fa fa-search mr-2"></i> 查询
-                </button>
+                <div class="d-flex gap-4 justify-content-end w-full" style="margin-top: 1rem">
+                    <button type="button" id="searchBtn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30 transition-all">
+                        <i class="fa fa-search mr-2"></i> 查询
+                    </button>
+                    <button type="button" id="resetBtn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:ring-4 focus:ring-gray-300 transition-all">
+                        <i class="fa fa-undo mr-2"></i> 重置
+                    </button>
+                </div>
             </div>
             <div id="loadingIndicator" class="loading-indicator">
                 <div class="spinner-border text-primary" role="status">
@@ -67,7 +72,17 @@
         const errorDiv = document.getElementById('errorMessage');
         const resultContainer = document.getElementById('resultContainer');
         const resultText = document.querySelector('.result-text');
+        const resetBtn = document.getElementById('resetBtn');
         
+        // 新增重置函数
+        function resetForm() {
+            ldapInput.value = '';
+            resetSearchState();
+            errorDiv.textContent = '';
+            resultText.textContent = '';
+        }
+        
+        resetBtn.addEventListener('click', resetForm);
         let searchTimeout;
 
         function resetSearchState() {
