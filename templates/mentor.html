@@ -13,7 +13,6 @@
                     <i class="fa fa-search mr-2"></i> 查询
                 </button>
             </div>
-            <!-- 修改加载指示器类名避免冲突 -->
             <div id="loadingIndicator" class="loading-indicator">
                 <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
@@ -55,14 +54,13 @@
     .result-text {
         white-space: pre-line;
         font-family: monospace;
-        font-size: 16px;  /* 新增字体大小设置 */
-        line-height: 1.6; /* 新增行高设置 */
+        font-size: 16px;  
+        line-height: 1.6; 
     }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // 更新元素选择器
         const ldapInput = document.getElementById('ldap');
         const searchBtn = document.getElementById('searchBtn');
         const loadingDiv = document.getElementById('loadingIndicator');
@@ -136,10 +134,8 @@
             });
         }
 
-        // 绑定搜索按钮点击事件
-        searchBtn.addEventListener('click', search);
 
-        // 绑定回车键事件
+        searchBtn.addEventListener('click', search);
         ldapInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 search();

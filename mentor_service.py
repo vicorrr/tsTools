@@ -33,7 +33,6 @@ def get_teacher_info(ldap, cookies):
 def get_lesson_info(ldap, cookies):
     """获取带班信息"""
     try:
-        # 使用正确的API地址
         url = f"https://tutor.zhenguanyu.com/tutor-atm-lesson/api/teams?pageSize=100&page=0&filterPseudoLesson=true&mentorKeyword={ldap}"
         print("获取带班信息接口：", url)
 
