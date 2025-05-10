@@ -46,17 +46,11 @@ def setup_chrome_driver():
         chrome_options = Options()
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--remote-debugging-port=9222')
-        chrome_options.add_argument('--disable-web-security')
-        chrome_options.add_argument('--allow-running-insecure-content')
-        chrome_options.add_argument('--ignore-certificate-errors')
-        chrome_options.add_argument('--log-level=3')
+        chrome_options.add_argument('--log-level=3')  # 隐藏冗余日志
 
         chromedriver_path = os.path.join(BASE_DIR, 'chromedriver')
-        # 检查 chromedriver 文件是否存在
         if not os.path.exists(chromedriver_path):
             raise FileNotFoundError(f"未找到 chromedriver 文件: {chromedriver_path}")
-        
 
         print("正在启动 Chrome...")
         service = Service(chromedriver_path)
@@ -104,7 +98,7 @@ def login_and_save_cookies():
         # 等待登录完成
         while check_login_status(driver):
             print("等待登录完成...")
-            time.sleep(2)
+            time.sleep(5)
         
         print("登录成功，正在保存cookies...")
         cookies = driver.get_cookies()

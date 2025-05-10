@@ -109,10 +109,10 @@
             resetSearchState();
             loadingDiv.style.display = 'block';
 
-            // 设置超时（10秒）
+            // 设置超时
             searchTimeout = setTimeout(() => {
                 showError('查询超时，请重试');
-            }, 10000);
+            }, 24000);
 
             // 发送请求
             fetch('/search_mentor', {

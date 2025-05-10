@@ -105,17 +105,29 @@ def sale_to_User(lessonid, user, cookies):
     else:
         userMatcherId_display = saleStrategy.get('userMatcherId_display')
         match_display = match_user(user, userMatcherId_display, cookies)
-        if match_display['matched'] and saleStrategy['userMatcherId_display_include']:
-            display_text = f'用户符合{userMatcherId_display}群组，对该用户可见'
+        if match_display['matched']:
+            if saleStrategy['userMatcherId_display_include']:
+                display_text = f'用户符合{userMatcherId_display}群组，对该用户可见'
+            else:
+                display_text = f'用户符合{userMatcherId_display}群组，对该用户不可见'
         else:
-            display_text = f'用户不符合{userMatcherId_display}群组，对该用户不可见'
+            if saleStrategy['userMatcherId_display_include']:
+                display_text = f'用户不符合{userMatcherId_display}群组，对该用户不可见'
+            else:
+                display_text = f'用户不符合{userMatcherId_display}群组，对该用户可见'
 
         userMatcherId_sale = saleStrategy.get('userMatcherId_sale')
         match_sale = match_user(user, userMatcherId_sale, cookies)
-        if match_sale['matched'] and saleStrategy['userMatcherId_sale_include']:
-            sale_text = f'用户符合{userMatcherId_sale}群组，该用户可购买'
+        if match_sale['matched']:
+            if saleStrategy['userMatcherId_sale_include']:
+                sale_text = f'用户符合{userMatcherId_sale}群组，该用户可购买'
+            else:
+                sale_text = f'用户符合{userMatcherId_sale}群组，该用户不可购买' 
         else:
-            sale_text = f'用户不符合{userMatcherId_sale}群组，该用户不可购买'
+            if saleStrategy['userMatcherId_sale_include']:
+                sale_text = f'用户不符合{userMatcherId_sale}群组，该用户不可购买'
+            else:
+                sale_text = f'用户不符合{userMatcherId_sale}群组，该用户可购买'
 
         # 在sale_to_User函数返回结构中
         return {
