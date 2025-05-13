@@ -24,10 +24,14 @@
                 </div>
                 <p class="mt-2">正在查询中...</p>
             </div>
-            <!-- 修改错误信息容器类名 -->
             <div id="errorMessage" class="error-message-container"></div>
             <div id="resultContainer" class="result-container">
-                <div class="result-text"></div>
+                <div class="teacher-text"></div>
+                <div class="mentor-text"></div>
+                <!-- 新增复制按钮 -->
+                <button type="button" class="copy-mentor-btn px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30 transition-all mt-2">
+                    <i class="fa fa-copy mr-2"></i> 复制
+                </button>
             </div>
         </div>
     </div>
@@ -56,11 +60,21 @@
         background-color: #f8f9fa;
         display: none;
     }
-    .result-text {
+    .teacher-text {
         white-space: pre-line;
         font-family: monospace;
         font-size: 16px;  
         line-height: 1.6; 
+    }
+    /* 新增mentor-text样式 */
+    .mentor-text {
+        white-space: pre-line;
+        font-family: monospace;
+        font-size: 16px;
+        line-height: 1.6;
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
     }
 </style>
 
@@ -71,15 +85,18 @@
         const loadingDiv = document.getElementById('loadingIndicator');
         const errorDiv = document.getElementById('errorMessage');
         const resultContainer = document.getElementById('resultContainer');
-        const resultText = document.querySelector('.result-text');
+        const teacherText = document.querySelector('.teacher-text');
+        const mentorText = document.querySelector('.mentor-text');
         const resetBtn = document.getElementById('resetBtn');
+        const copyMentorBtn = document.querySelector('.copy-mentor-btn');  // 新增按钮引用（关键修复）
         
         // 新增重置函数
         function resetForm() {
             ldapInput.value = '';
             resetSearchState();
             errorDiv.textContent = '';
-            resultText.textContent = '';
+            teacherText.textContent = '';
+            mentorText.textContent = '';
         }
         
         resetBtn.addEventListener('click', resetForm);
@@ -135,7 +152,8 @@
                 loadingDiv.style.display = 'none';
                 
                 if (data.success) {
-                    resultText.textContent = data.display_text;
+                    teacherText.textContent = data.teacher_text;
+                    mentorText.textContent = data.mentor_text;
                     resultContainer.style.display = 'block';
                 } else {
                     showError(data.error || '查询失败');
@@ -155,6 +173,27 @@
             if (e.key === 'Enter') {
                 search();
             }
+        });
+
+        // 新增复制功能
+        copyMentorBtn.addEventListener('click', function() {
+            const mentorContent = mentorText.textContent.trim();
+            if (!mentorContent) {
+                showError('没有可复制的上级信息');
+                return;
+            }
+
+            navigator.clipboard.writeText(mentorContent)
+                .then(() => {
+                    copyMentorBtn.innerHTML = '<i class="fa fa-check mr-2"></i> 复制成功';
+                    setTimeout(() => {
+                        copyMentorBtn.innerHTML = '<i class="fa fa-copy mr-2"></i> 复制';  
+                    }, 1500);
+                })
+                .catch(err => {
+                    console.error('复制失败:', err);
+                    showError('复制失败，请重试');
+                });
         });
     });
 </script>

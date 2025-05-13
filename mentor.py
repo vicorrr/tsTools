@@ -73,19 +73,20 @@ def mentor_search(ldap, cookies):
         # 初始化响应数据
         response_data = {
             'success': True,
-            'display_text': "",
+            'teacher_text': "",
+            'mentor_text': "",
             'teacher_info': teacher_info,
             'lesson_info': None,
             'manager_info': None
         }
 
         # 构建基础显示文本
-        display_text = "老师信息：\n"
-        display_text += f"- 姓名：{teacher_info['name']}\n"
-        display_text += f"- 电话：{teacher_info['phone']}\n"
-        display_text += f"- LDAP：{ldap}\n\n"
-        display_text += f"部门名称：{teacher_info['absolutePath']}\n\n"
-        display_text += f"部门管理者：{teacher_info['managerLdap']}\n\n"
+        teacher_text = "老师信息：\n"
+        teacher_text += f"- 姓名：{teacher_info['name']}\n"
+        teacher_text += f"- 电话：{teacher_info['phone']}\n"
+        teacher_text += f"- LDAP：{ldap}\n\n"
+        mentor_text = f"部门名称：{teacher_info['absolutePath']}\n\n"
+        mentor_text += f"部门管理者：{teacher_info['managerLdap']}\n\n"
 
         error_messages = []
 
@@ -96,14 +97,15 @@ def mentor_search(ldap, cookies):
             if mentor_info:
                 print(f"上级信息获取成功: {mentor_info}")
                 if mentor_info['position'] != '主管':
-                   display_text += f"直属上级（主管）：{mentor_info['mentor_ldap']}\n\n"
+                   mentor_text += f"直属上级（主管）：{mentor_info['mentor_ldap']}\n\n"
             else:
                 error_messages.append("获取上级信息失败")
         except Exception as e:
             print(f"获取上级信息失败: {e}")
             error_messages.append(f'获取上级信息失败: {str(e)}')
 
-        response_data['display_text'] = display_text
+        response_data['teacher_text'] = teacher_text
+        response_data['mentor_text'] = mentor_text
 
         print("查询完成，返回结果")
         return response_data
