@@ -1,0 +1,114 @@
+from common_utils import make_request
+import traceback
+
+def get_teacher_info(ldap, cookies):
+    """获取教师信息"""
+    try:
+        url = f"https://tutor.zhenguanyu.com/tutor-wb-poseidon/api/user-department-record/{ldap}"
+
+        response = make_request(url, cookies)
+
+        if response.status_code != 200:
+            raise Exception(f"获取教师信息失败: HTTP {response.status_code}")
+
+        teacher_data = response.json()
+        department_info = teacher_data.get('userDepartmentInfo', {})
+        # 处理部门路径拼接
+        absolute_path = ' / '.join(department_info.get('absolutePath', []))
+
+        return {
+            'name': teacher_data.get('fullName', ''),
+            'phone': teacher_data.get('mentorAccount', ''),
+            'departmentId': teacher_data.get('userDepartmentInfo', {}).get('id', ''),
+            'absolutePath': absolute_path,
+            'managerLdap': teacher_data.get('userDepartmentInfo', {}).get('managerLdap', ''),
+            'managerFullName': teacher_data.get('userDepartmentInfo', {}).get('managerFullName', ''),
+            'isGroup': teacher_data.get('userDepartmentInfo', {}).get('group', False)
+        }
+    except Exception as e:
+        print(f"获取老师信息时发生错误: {e}")
+        print(f"详细错误信息: {traceback.format_exc()}")
+        raise
+
+def get_mentor_info(ldap, cookies):
+    """获取上级信息"""
+    try:
+        url = f"https://tutor.zhenguanyu.com/tutor-hermes-gateway/api/staffs/info/{ldap}"
+        # print("获取上级接口：", url)
+
+        response = make_request(url, cookies)
+
+        if response.status_code != 200:
+            raise Exception(f"获取上级信息失败: HTTP {response.status_code}")
+
+        mentor_data = response.json()
+        mentor_info = {
+            'position': mentor_data.get('position',''),
+            'mentor_ldap': mentor_data.get('directLeaderLdap',''),
+            'mentor_path': mentor_data.get('displayAbsolutePath','')
+        }
+        return mentor_info
+    except Exception as e:
+        print(f"获取带班信息时发生错误: {e}")
+        print(f"详细错误信息: {traceback.format_exc()}")
+        return None
+
+def mentor_search(ldap, cookies):
+    try:
+        print("\n=== 开始新的查询 ===")
+        if not ldap:
+            return {'success': False, 'error': '请输入LDAP'}
+
+        print(f"查询LDAP: {ldap}")
+
+        try:
+            # 获取教师信息
+            print("正在获取教师信息...")
+            teacher_info = get_teacher_info(ldap, cookies)
+            print(f"教师信息获取成功: {teacher_info}")
+        except Exception as e:
+            print(f"获取教师信息失败: {e}")
+            return {'success': False, 'error': f'获取教师信息失败: {str(e)}'}
+
+        # 初始化响应数据
+        response_data = {
+            'success': True,
+            'display_text': "",
+            'teacher_info': teacher_info,
+            'lesson_info': None,
+            'manager_info': None
+        }
+
+        # 构建基础显示文本
+        display_text = "老师信息：\n"
+        display_text += f"- 姓名：{teacher_info['name']}\n"
+        display_text += f"- 电话：{teacher_info['phone']}\n"
+        display_text += f"- LDAP：{ldap}\n\n"
+        display_text += f"部门名称：{teacher_info['absolutePath']}\n\n"
+        display_text += f"部门管理者：{teacher_info['managerLdap']}\n\n"
+
+        error_messages = []
+
+        try:
+            print("正在获取上级信息...")
+            mentor = teacher_info['managerLdap']
+            mentor_info = get_mentor_info(mentor, cookies)
+            if mentor_info:
+                print(f"上级信息获取成功: {mentor_info}")
+                if mentor_info['position'] != '主管':
+                   display_text += f"直属上级（主管）：{mentor_info['mentor_ldap']}\n\n"
+            else:
+                error_messages.append("获取上级信息失败")
+        except Exception as e:
+            print(f"获取上级信息失败: {e}")
+            error_messages.append(f'获取上级信息失败: {str(e)}')
+
+        response_data['display_text'] = display_text
+
+        print("查询完成，返回结果")
+        return response_data
+
+    except Exception as e:
+        print(f"查询过程中发生错误: {e}")
+        print(f"详细错误信息: {traceback.format_exc()}")
+        return {'success': False, 'error': str(e)}
