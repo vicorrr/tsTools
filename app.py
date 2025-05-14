@@ -5,6 +5,7 @@ from materials_service import search_materials
 from baseExam_service import exam_search
 from common_utils import get_cookies
 from saleStrategy import sale_to_User
+from restore_focus import re_focus  # 新增导入恢复逻辑函数
 
 app = Flask(__name__, template_folder='templates')  # 新增模板文件夹配置
 
@@ -96,6 +97,24 @@ def saleStrategy():
         lessonId = request.form.get('lessonId').strip()
         userid = request.form.get('userId').strip()
         result = sale_to_User(lessonId, userid, cookies)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# 新增恢复班主任资格页面路由
+@app.route('/restoreFocus')
+def restore_focus_page():
+    return render_template('restoreFocus.html')
+
+# 新增恢复操作处理路由
+@app.route('/restore_focus', methods=['POST'])
+def handle_restore_focus():
+    try:
+        cookies = get_cookies()  # 获取登录态
+        phone_numbers = request.form.get('phoneNumbers', '').split('\n')  
+        phone_numbers = [phone.strip() for phone in phone_numbers if phone.strip()]  
+        
+        result = re_focus(phone_numbers, cookies)  
         return jsonify(result)
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}恢复班主任资格{% endblock %}
+{% block content %}
+<div class="container mt-5">
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="input-group mb-3">
+                <div class="mb-4">
+                    <!-- 修改为多行文本域 -->
+                    <textarea id="phoneNumbers" name="phoneNumbers" 
+                              placeholder="请输入手机号（每行一个）" 
+                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all"
+                              rows="5"></textarea>  
+                </div>
+                <div class="d-flex gap-4 justify-content-end w-full" style="margin-top: 1rem">
+                    <button type="button" id="queryBtn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30 transition-all">
+                        <i class="fa fa-search mr-2"></i> 恢复
+                    </button>
+                    <button type="button" id="resetBtn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 focus:ring-4 focus:ring-gray-300 transition-all">
+                        <i class="fa fa-undo mr-2"></i> 重置
+                    </button>
+                </div>
+            </div>
+            
+            <div id="loadingIndicator" class="loading-indicator">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">正在处理中...</p>
+            </div>
+            <div id="errorMessage" class="error-message-container"></div>
+            <div id="resultContainer" class="result-container">
+                <div class="result-text"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .loading-indicator {
+        display: none;
+        text-align: center;
+        margin: 20px 0;
+    }
+    .error-message-container {
+        color: #dc3545;
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid #dc3545;
+        border-radius: 5px;
+        background-color: #f8d7da;
+        display: none;
+    }
+    .result-container {
+        margin-top: 20px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        display: none;
+    }
+    .result-text {
+        white-space: pre-line;
+        font-family: monospace;
+        font-size: 16px;  
+        line-height: 1.6; 
+    }
+    .result-text a {
+        color: #2563eb;
+        text-decoration: underline;
+    }
+    .result-text a:hover {
+        color: #1d4ed8;
+        text-decoration: none;
+    }
+    .result-item {
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: white;
+    }
+    /* 新增文本域样式优化 */
+    textarea {
+        min-height: 120px;  
+        resize: vertical;   
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const phoneInput = document.getElementById('phoneNumbers');  
+        const searchBtn = document.getElementById('queryBtn');
+        const loadingDiv = document.getElementById('loadingIndicator');
+        const errorDiv = document.getElementById('errorMessage');
+        const resultContainer = document.getElementById('resultContainer');
+        const resultText = document.querySelector('.result-text');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        let searchTimeout;
+
+        function resetSearchState() {
+            clearTimeout(searchTimeout);
+            loadingDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            resultContainer.style.display = 'none';
+        }
+
+        function resetForm() {
+            phoneInput.value = '';  
+            resetSearchState();
+            errorDiv.textContent = '';
+            resultText.textContent = '';
+        }
+
+        function showError(message) {
+            resetSearchState();
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function search() {
+            
+            const phoneNumbers = phoneInput.value.trim().split('\n').filter(phone => phone.trim() !== '');
+            if (phoneNumbers.length === 0) {
+                showError('请输入手机号（每行一个）');
+                return;
+            }
+
+            resetSearchState();
+            loadingDiv.style.display = 'block';
+
+            searchTimeout = setTimeout(() => {
+                showError('处理超时，请重试');
+            }, 30000);
+
+            // 发送手机号数组（以换行符分隔的字符串）
+            fetch('/restore_focus', {  
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `phoneNumbers=${encodeURIComponent(phoneNumbers.join('\n'))}`  // 换行符分隔
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                clearTimeout(searchTimeout);
+                loadingDiv.style.display = 'none';
+                
+                if (data.success) {
+                    resultText.textContent = data.result;
+                    resultContainer.style.display = 'block';
+                } else {
+                    showError(data.error || '处理失败');
+                }
+            })
+            .catch(error => {
+                clearTimeout(searchTimeout);
+                loadingDiv.style.display = 'none';
+                showError(`处理失败: ${error.message}`);
+                console.error('Error:', error);
+            });
+        }
+
+        searchBtn.addEventListener('click', search);
+        resetBtn.addEventListener('click', resetForm);
+
+        // 支持回车键触发（调整逻辑：普通Enter换行，Ctrl+Enter提交）
+        phoneInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (e.ctrlKey) {
+                    e.preventDefault();  // 阻止默认换行，触发提交
+                    search();
+                }
+                // 普通Enter键不执行任何操作，保留默认换行行为
+            }
+        });
+    });
+</script>
+{% endblock %}
