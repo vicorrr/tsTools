@@ -27,7 +27,7 @@ def get_teacher_info(ldap, cookies):
         }
     except Exception as e:
         print(f"获取老师信息时发生错误: {e}")
-        print(f"详细错误信息: {traceback.format_exc()}")
+        # print(f"详细错误信息: {traceback.format_exc()}")
         raise
 
 def get_lesson_info(ldap, cookies):
@@ -53,8 +53,8 @@ def get_lesson_info(ldap, cookies):
         }
         return lesson_info
     except Exception as e:
-        print(f"获取带班信息时发生错误: {e}")
-        print(f"详细错误信息: {traceback.format_exc()}")
+        # print(f"获取带班信息时发生错误: {e}")
+        # print(f"详细错误信息: {traceback.format_exc()}")
         return None
 
 def get_manager_info(phone, lesson_id, cookies):
@@ -79,6 +79,29 @@ def get_manager_info(phone, lesson_id, cookies):
         return manager_info
     except Exception as e:
         print(f"获取主管信息时发生错误: {e}")
+        # print(f"详细错误信息: {traceback.format_exc()}")
+        return None
+
+def get_mentor_info(ldap, cookies):
+    """获取直属上级信息"""
+    try:
+        url = f"https://tutor.zhenguanyu.com/tutor-hermes-gateway/api/staffs/info/{ldap}"
+        # print("获取上级接口：", url)
+
+        response = make_request(url, cookies)
+
+        if response.status_code != 200:
+            raise Exception(f"获取上级信息失败: HTTP {response.status_code}")
+
+        mentor_data = response.json()
+        mentor_info = {
+            'position': mentor_data.get('position',''),
+            'mentor_ldap': mentor_data.get('directLeaderLdap',''),
+            'mentor_path': mentor_data.get('displayAbsolutePath','')
+        }
+        return mentor_info
+    except Exception as e:
+        print(f"获取带班信息时发生错误: {e}")
         print(f"详细错误信息: {traceback.format_exc()}")
         return None
 
@@ -102,19 +125,20 @@ def mentor_search(ldap, cookies):
         # 初始化响应数据
         response_data = {
             'success': True,
-            'display_text': "",
+            'teacher_text': "",
+            'mentor_text': "",
             'teacher_info': teacher_info,
             'lesson_info': None,
             'manager_info': None
         }
 
         # 构建基础显示文本
-        display_text = "老师信息：\n"
-        display_text += f"- 姓名：{teacher_info['name']}\n"
-        display_text += f"- 电话：{teacher_info['phone']}\n"
-        display_text += f"- LDAP：{ldap}\n\n"
-        display_text += f"部门名称：{teacher_info['absolutePath']}\n\n"
-        display_text += f"部门管理者：{teacher_info['managerLdap']}\n\n"
+        teacher_text = "老师信息：\n"
+        teacher_text += f"- 姓名：{teacher_info['name']}\n"
+        teacher_text += f"- 电话：{teacher_info['phone']}\n"
+        teacher_text += f"- LDAP：{ldap}\n\n"
+        mentor_text = f"部门名称：{teacher_info['absolutePath']}\n\n"
+        mentor_text += f"部门管理者：{teacher_info['managerLdap']}\n\n"
 
         error_messages = []
 
@@ -125,30 +149,32 @@ def mentor_search(ldap, cookies):
             if lesson_info:
                 print(f"带班信息获取成功: {lesson_info}")
                 response_data['lesson_info'] = lesson_info
+
+                try:
+                    # 获取主管信息
+                    print("正在获取主管信息...")
+                    manager_info = get_manager_info(teacher_info['phone'], lesson_info['lessonId'] if lesson_info else '', cookies)
+                    if manager_info:
+                        print(f"主管信息获取成功: {manager_info}")
+                        response_data['manager_info'] = manager_info
+                        mentor_text += f"主管LDAP：{manager_info['competentManagerLdap']}\n"
+                except Exception as e:
+                    print(f"获取主管信息失败: {e}")
+
             else:
-                error_messages.append("获取带班信息失败")
+                # 直接查询上级
+                print("未找到带班信息，正在查询直属上级...")
+                mentor_info = get_mentor_info(teacher_info['managerLdap'], cookies)
+                print(f"直属上级信息: {mentor_info}")
+                if mentor_info['position'] != '主管':
+                   mentor_text += f"直属上级（主管）：{mentor_info['mentor_ldap']}\n\n"
         except Exception as e:
-            print(f"获取带班信息失败: {e}")
-            error_messages.append(f'获取带班信息失败: {str(e)}')
+            print(f"获取信息失败: {e}")
+            error_messages.append(f'获取信息失败: {str(e)}')
 
-        try:
-            # 获取主管信息
-            print("正在获取主管信息...")
-            manager_info = get_manager_info(teacher_info['phone'], lesson_info['lessonId'] if lesson_info else '', cookies)
-            if manager_info:
-                print(f"主管信息获取成功: {manager_info}")
-                response_data['manager_info'] = manager_info
-                display_text += f"主管LDAP：{manager_info['competentManagerLdap']}\n"
-            else:
-                error_messages.append("获取主管信息失败")
-        except Exception as e:
-            print(f"获取主管信息失败: {e}")
-            error_messages.append(f'获取主管信息失败: {str(e)}')
 
-        if error_messages:
-            display_text += "\n".join([f"⚠️ {msg}" for msg in error_messages])
-
-        response_data['display_text'] = display_text
+        response_data['teacher_text'] = teacher_text
+        response_data['mentor_text'] = mentor_text
 
         print("查询完成，返回结果")
         return response_data

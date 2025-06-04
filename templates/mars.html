@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+{% block title %}客户端下载链接{% endblock %}
+{% block content %}
+<div class="container mt-5">
+
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="input-group mb-3">  
+                <div class="d-flex gap-4 justify-content-end w-full" style="margin-top: 1rem">
+                    <button type="button" id="searchBtn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/30 transition-all">
+                        <i class="fa fa-search mr-2"></i> 查询
+                    </button>
+                </div>
+            </div>
+            <div id="loadingIndicator" class="loading-indicator">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">正在查询中...</p>
+            </div>
+            <div id="errorMessage" class="error-message-container"></div>
+            <div id="resultContainer" class="result-container">
+                <div id="textContent" class="app-content grid grid-cols-2 gap-4"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .loading-indicator {
+        display: none;
+        text-align: center;
+        margin: 20px 0;
+    }
+    .error-message-container {
+        color: #dc3545;
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid #dc3545;
+        border-radius: 5px;
+        background-color: #f8d7da;
+        display: none;
+    }
+    .result-container {
+        margin-top: 20px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        display: none;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchBtn = document.getElementById('searchBtn');
+        const loadingDiv = document.getElementById('loadingIndicator');
+        const errorDiv = document.getElementById('errorMessage');
+        const resultContainer = document.getElementById('resultContainer');
+        const textContent = document.querySelector('.textContent');
+        
+        let searchTimeout;
+
+        function resetSearchState() {
+            clearTimeout(searchTimeout);
+            loadingDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            resultContainer.style.display = 'none';
+        }
+
+        function showError(message) {
+            resetSearchState();
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        searchBtn.addEventListener('click', search);
+
+        function search() {
+            // 重置状态
+            resetSearchState();
+            loadingDiv.style.display = 'block';
+
+            // 设置超时
+            searchTimeout = setTimeout(() => {
+                showError('查询超时，请重试');
+            }, 24000);
+
+            fetch('/mars_url', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({})  
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                clearTimeout(searchTimeout);
+                loadingDiv.style.display = 'none';
+                
+                const container = document.getElementById('textContent');
+                // 清空原有内容
+                container.innerHTML = '';
+                
+                // 添加表格样式（可根据需要调整）
+                const style = document.createElement('style');
+                style.textContent = `
+                    .download-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-top: 1rem;
+                    }
+                    .download-table th, .download-table td {
+                        border: 1px solid #ddd;
+                        padding: 12px;
+                        text-align: left;
+                        max-width: 200px;  /* 限制单元格最大宽度 */
+                        overflow-wrap: break-word;  /* 强制长单词/URL换行 */
+                    }
+                    .download-table th {
+                        background-color: #f8f9fa;
+                        font-weight: 600;
+                    } 
+                `;
+                container.appendChild(style);
+            
+                // 构建表格内容
+                if (data.success) {
+                    const yfd_tableHtml = `
+                        <table class="download-table">
+                            <thead>
+                                <tr>
+                                    <th>猿辅导</th>
+                                    <th>客户端类型</th>
+                                    <th>下载链接</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${data.yfd_android.version}</td>
+                                    <td>猿辅导Android手机客户端</td>
+                                    <td>${data.yfd_android.url64}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.yfd_android.version}</td>
+                                    <td>猿辅导Android平板/学习机</td>
+                                    <td>${data.yfd_android.url64}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.yfd_iphone.version}</td>
+                                    <td>猿辅导iPhone手机</td>
+                                    <td>${data.yfd_iphone.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.yfd_ipad.version}</td>
+                                    <td>猿辅导iPad平板</td>
+                                    <td>${data.yfd_ipad.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.yfd_win.version}</td>
+                                    <td>猿辅导windows电脑（64位）</td>
+                                    <td>${data.yfd_win.url64}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.yfd_win.version}</td>
+                                    <td>猿辅导windows电脑（32位）</td>
+                                    <td>${data.yfd_win.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.yfd_mac.version}</td>
+                                    <td>猿辅导Mac苹果电脑</td>
+                                    <td>${data.yfd_mac.url}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `;
+                    const collie_tableHtml = `
+                        <table class="download-table">
+                            <thead>
+                                <tr>
+                                    <th>素养课</th>
+                                    <th>客户端类型</th>
+                                    <th>下载链接</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${data.collie_android.version}</td>
+                                    <td>素养课Android手机客户端</td>
+                                    <td>${data.collie_android.url64}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.collie_android.version}</td>
+                                    <td>素养课ndroid平板/学习机</td>
+                                    <td>${data.collie_android.url64}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.collie_iphone.version}</td>
+                                    <td>素养课iPhone手机</td>
+                                    <td>${data.collie_iphone.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.collie_ipad.version}</td>
+                                    <td>素养课iPad平板</td>
+                                    <td>${data.collie_ipad.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.collie_win.version}</td>
+                                    <td>素养课windows电脑（64位）</td>
+                                    <td>${data.collie_win.url64}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.collie_win.version}</td>
+                                    <td>素养课windows电脑（32位）</td>
+                                    <td>${data.collie_win.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.collie_mac.version}</td>
+                                    <td>素养课Mac苹果电脑</td>
+                                    <td>${data.collie_mac.url}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `;
+                    const husky_tableHtml = `
+                        <table class="download-table">
+                            <thead>
+                                <tr>
+                                    <th>小猿优课</th>
+                                    <th>客户端类型</th>
+                                    <th>下载链接</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${data.husky_android.version}</td>
+                                    <td>小猿优课Android手机客户端</td>
+                                    <td>${data.husky_android.url64}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.husky_android.version}</td>
+                                    <td>小猿优课ndroid平板/学习机</td>
+                                    <td>${data.husky_android.url64}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.husky_iphone.version}</td>
+                                    <td>小猿优课iPhone手机</td>
+                                    <td>${data.husky_iphone.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.husky_ipad.version}</td>
+                                    <td>小猿优课iPad平板</td>
+                                    <td>${data.husky_ipad.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.husky_win.version}</td>
+                                    <td>小猿优课windows电脑（64位）</td>
+                                    <td>${data.husky_win.url64}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.husky_win.version}</td>
+                                    <td>小猿优课windows电脑（32位）</td>
+                                    <td>${data.husky_win.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.husky_mac.version}</td>
+                                    <td>小猿优课Mac苹果电脑</td>
+                                    <td>${data.husky_mac.url}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `;
+                    const teacher_tableHtml = `
+                        <table class="download-table">
+                            <thead>
+                                <tr>
+                                    <th>老师客户端</th>
+                                    <th>客户端类型</th>
+                                    <th>下载链接</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${data.xyzs.version}</td>
+                                    <td>小猿助手（安卓手机）</td>
+                                    <td>${data.xyzs.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.ssb.version}</td>
+                                    <td>双设备（安卓手机）</td>
+                                    <td>${data.ssb.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.teacher_ipad.version}</td>
+                                    <td>iPad老师端（苹果ipad）</td>
+                                    <td>${data.teacher_ipad.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.genkeduan.version}</td>
+                                    <td>猿辅导跟课端（windows电脑）</td>
+                                    <td>${data.genkeduan.url64}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `;
+                    const admin_tableHtml = ` 
+                        <table class="download-table">
+                            <thead>
+                                <tr>
+                                    <th>管理员端</th>
+                                    <th>客户端类型</th>
+                                    <th>下载链接</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${data.admin_android.version}</td>
+                                    <td>管理员Android手机/Android平板</td>
+                                    <td>${data.admin_android.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.admin_ios.version}</td>
+                                    <td>管理员iPad/iPhone</td>
+                                    <td>${data.admin_ios.url}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.admin_win.version}</td>
+                                    <td>管理员windows电脑</td>
+                                    <td>${data.admin_win.url64}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.admin_mac.version}</td>
+                                    <td>管理员Mac苹果电脑</td>
+                                    <td>${data.admin_mac.url}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `;
+                    container.innerHTML += yfd_tableHtml;
+                    container.innerHTML += collie_tableHtml;
+                    container.innerHTML += husky_tableHtml;
+                    container.innerHTML += teacher_tableHtml;
+                    container.innerHTML += admin_tableHtml;
+                    
+                } else {
+                    container.textContent = '未获取到下载信息';
+                }
+            
+                resultContainer.style.display = 'block';
+            })
+            .catch(error => {
+                clearTimeout(searchTimeout);
+                loadingDiv.style.display = 'none';
+                showError(`查询失败: ${error.message}`);
+                console.error('Error:', error);
+            });
+        }
+
+
+
+    });
+</script>
+{% endblock %}

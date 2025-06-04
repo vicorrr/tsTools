@@ -63,7 +63,7 @@ def re_focus(phone_numbers, cookies):
             try:
                 # 获取老师信息
                 teacher_info = get_teacher_info(phone_num, cookies)
-                result_text.append(f"找到{phone_num}班主任信息：{teacher_info['ldap']}，{teacher_info['nickname']}")
+                result_text.append(f"{phone_num} 找到班主任信息：{teacher_info['ldap']}，{teacher_info['nickname']}")
                 print(f"找到{phone_num}班主任信息：{teacher_info['ldap']}")
 
                 # 状态检查
@@ -84,7 +84,7 @@ def re_focus(phone_numbers, cookies):
                     result_text.append(f"{phone_num} 恢复失败，操作返回状态码 {restore_result}\n\n")
 
             except Exception as e:
-                result_text.append(f"异常：{phone_num} 处理过程中发生错误 - {str(e)}")
+                result_text.append(f"{phone_num} 处理过程中发生错误 - {str(e)}")
 
         return {
             'success': True,

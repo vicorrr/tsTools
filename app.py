@@ -5,9 +5,10 @@ from materials_service import search_materials
 from baseExam_service import exam_search
 from common_utils import get_cookies
 from saleStrategy import sale_to_User
-from restore_focus import re_focus  # 新增导入恢复逻辑函数
+from restore_focus import re_focus  
+from mars import get_app
 
-app = Flask(__name__, template_folder='templates')  # 新增模板文件夹配置
+app = Flask(__name__, template_folder='templates') 
 
 # 路由定义
 @app.route('/')
@@ -33,6 +34,16 @@ def exam_page():
 @app.route('/saleStrategy')
 def exasaleStrategy_page():
     return render_template('saleStrategy.html')
+
+@app.route('/restoreFocus')
+def restore_focus_page():
+    return render_template('restoreFocus.html')
+
+@app.route('/mars')
+def mars_page():
+    return render_template('mars.html')
+
+
 
 @app.route('/search_mentor', methods=['POST'])
 def search_mentor_route():
@@ -101,12 +112,7 @@ def saleStrategy():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-# 新增恢复班主任资格页面路由
-@app.route('/restoreFocus')
-def restore_focus_page():
-    return render_template('restoreFocus.html')
 
-# 新增恢复操作处理路由
 @app.route('/restore_focus', methods=['POST'])
 def handle_restore_focus():
     try:
@@ -116,6 +122,16 @@ def handle_restore_focus():
         
         result = re_focus(phone_numbers, cookies)  
         return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/mars_url', methods=['POST'])
+def get_app_route():
+    try:
+        cookies = get_cookies()
+        apps_info = get_app(cookies)
+        return jsonify(apps_info)
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
