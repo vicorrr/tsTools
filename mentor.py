@@ -1,3 +1,4 @@
+from os import name
 from common_utils import make_request
 import traceback
 
@@ -43,13 +44,13 @@ def get_mentor_info(ldap, cookies):
 
         mentor_data = response.json()
         mentor_info = {
-            'position': mentor_data.get('position',''),
+            'positionName': mentor_data.get('positionLevels','')[0].get('name',''),
             'mentor_ldap': mentor_data.get('directLeaderLdap',''),
             'mentor_path': mentor_data.get('displayAbsolutePath','')
         }
         return mentor_info
     except Exception as e:
-        print(f"获取带班信息时发生错误: {e}")
+        print(f"获取+1信息时发生错误: {e}")
         print(f"详细错误信息: {traceback.format_exc()}")
         return None
 
@@ -63,7 +64,6 @@ def mentor_search(ldap, cookies):
 
         try:
             # 获取教师信息
-            print("正在获取教师信息...")
             teacher_info = get_teacher_info(ldap, cookies)
             print(f"教师信息获取成功: {teacher_info}")
         except Exception as e:
@@ -86,23 +86,32 @@ def mentor_search(ldap, cookies):
         teacher_text += f"- 电话：{teacher_info['phone']}\n"
         teacher_text += f"- LDAP：{ldap}\n\n"
         mentor_text = f"部门名称：{teacher_info['absolutePath']}\n\n"
-        mentor_text += f"部门管理者：{teacher_info['managerLdap']}\n\n"
+        
+
+        mentor_1 = teacher_info['managerLdap']
+        mentor_1_info = get_mentor_info(mentor_1, cookies)
+        mentor_text += f"部门管理者：{mentor_1}"
+        if teacher_info['isGroup']:
+            mentor_text += "（组长）\n\n"
+        else:
+            mentor_text += f"({mentor_1_info['positionName']})\n\n"
 
         error_messages = []
-
-        try:
-            print("正在获取上级信息...")
-            mentor = teacher_info['managerLdap']
-            mentor_info = get_mentor_info(mentor, cookies)
-            if mentor_info:
-                print(f"上级信息获取成功: {mentor_info}")
-                if mentor_info['position'] != '主管':
-                   mentor_text += f"直属上级（主管）：{mentor_info['mentor_ldap']}\n\n"
-            else:
-                error_messages.append("获取上级信息失败")
-        except Exception as e:
-            print(f"获取上级信息失败: {e}")
-            error_messages.append(f'获取上级信息失败: {str(e)}')
+        if teacher_info['isGroup'] or ldap == mentor_1:
+            try:
+                print("正在获取主管信息...")
+                mentor_1_info = get_mentor_info(mentor_1, cookies)
+                if mentor_1_info:
+                    mentor_2 = mentor_1_info['mentor_ldap']
+                    mentor_2_info = get_mentor_info(mentor_2, cookies)
+                    print(f"+2信息获取成功: {mentor_1_info}")
+                    mentor_text += f"直属上级：{mentor_2}"
+                    mentor_text += f" ({mentor_2_info['positionName']})\n\n"
+                else:
+                    error_messages.append("获取主管信息失败")
+            except Exception as e:
+                print(f"获取主管信息失败: {e}")
+                error_messages.append(f'获取主管信息失败: {str(e)}')
 
         response_data['teacher_text'] = teacher_text
         response_data['mentor_text'] = mentor_text

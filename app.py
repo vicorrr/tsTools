@@ -108,6 +108,7 @@ def saleStrategy():
         lessonId = request.form.get('lessonId').strip()
         userid = request.form.get('userId').strip()
         result = sale_to_User(lessonId, userid, cookies)
+        
         return jsonify(result)
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

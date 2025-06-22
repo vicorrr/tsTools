@@ -22,16 +22,7 @@ def get_saleStrategy(lessonid, cookies):
         userMatcherId_display_include = response.json().get('channelSaleStrategies', {})[0].get('userMatcherIdInclude', '')
         userMatcherId_sale = response.json().get('channelSaleStrategies', {})[1].get('userMatcherId', '')
         userMatcherId_sale_include = response.json().get('channelSaleStrategies', {})[1].get('userMatcherIdInclude', '')
-        if userMatcherId_display_include:
-            if userMatcherId_sale_include:
-                saleStrategy_content = f"{userMatcherId_display}群组可见，{userMatcherId_sale}群组可购买"
-            else:
-                saleStrategy_content = f"{userMatcherId_display}群组可见，{userMatcherId_sale}群组不可购买"
-        else:
-            if userMatcherId_sale_include:
-                saleStrategy_content = f"{userMatcherId_display}群组不可见，{userMatcherId_sale}群组可购买"
-            else:
-                saleStrategy_content = f"{userMatcherId_display}群组不可见，{userMatcherId_sale}群组不可购买"
+
         return {
             'id': response_data.get('id'),
             'name': response_data.get('name'),
@@ -40,7 +31,6 @@ def get_saleStrategy(lessonid, cookies):
             'userMatcherId_display_include': userMatcherId_display_include,
             'userMatcherId_sale': userMatcherId_sale,
             'userMatcherId_sale_include': userMatcherId_sale_include,
-            'saleStrategy_content': saleStrategy_content
         }
     except requests.exceptions.JSONDecodeError as e:
         print(f"接口返回非JSON数据：{response.text[:200]}")  # 截取前200字符用于调试
@@ -135,7 +125,10 @@ def sale_to_User(lessonid, user, cookies):
             'saleStrategyId': saleStrategy.get('id', 'N/A'),
             'saleStrategyName': saleStrategy.get('name', '未命名策略'),
             'saleStrategyLdap': saleStrategy.get('ldap', '未知负责人'),
-            'saleStrategy_content': saleStrategy.get('saleStrategy_content', '未定义'),
+            'saleStrategy_display': saleStrategy.get('userMatcherId_display'),
+            'saleStrategy_display_include': saleStrategy.get('userMatcherId_display_include'),
+            'saleStrategy_sale': saleStrategy.get('userMatcherId_sale'),
+            'saleStrategy_sale_include': saleStrategy.get('userMatcherId_sale_include'),
             'displayStatus': display_text,
             'saleStatus': sale_text,
             'displayReason': match_display.get('reason', '').replace('\n', '<br/>'),

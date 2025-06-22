@@ -201,7 +201,13 @@
                 if (data.success) {
                     let displayHTML = `策略ID: <a class="strategy-link" href="https://amaze.zhenguanyu.com/commerce/#/saleStrategyDispatch/lessonSaleStrategyPage?keyword=${data.saleStrategyId}" target="_blank">${data.saleStrategyId || '暂无'}</a> 
                         策略名称: ${data.saleStrategyName || '未命名策略'} 
-                        策略详情：${data.saleStrategy_content || '暂无'} <br>
+                        策略详情：\
+                        ${data.saleStrategy_display_include ? 
+                          `<a class='strategy-link' href='https://amaze.zhenguanyu.com/marketing/#/market/userGroup/userGroupDetail/${data.saleStrategy_display}' target='_blank'>${data.saleStrategy_display}</a>群组可见` : 
+                          `<a class='strategy-link' href='https://amaze.zhenguanyu.com/marketing/#/market/userGroup/userGroupDetail/${data.saleStrategy_display}' target='_blank'>${data.saleStrategy_display}</a>群组不可见`}，${data.saleStrategy_sale_include ? 
+                          `<a class='strategy-link' href='https://amaze.zhenguanyu.com/marketing/#/market/userGroup/userGroupDetail/${data.saleStrategy_sale}' target='_blank'>${data.saleStrategy_sale}</a>群组可购买` : 
+                          `<a class='strategy-link' href='https://amaze.zhenguanyu.com/marketing/#/market/userGroup/userGroupDetail/${data.saleStrategy_sale}' target='_blank'>${data.saleStrategy_sale}</a>群组不可购买`}
+                        <br>
                         ${data.displayStatus || '状态未知'} 
                         ${data.saleStatus || '状态未知'}<br>
                         
