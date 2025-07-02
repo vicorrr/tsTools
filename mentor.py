@@ -1,3 +1,4 @@
+# 按展示部门路径，查找上级
 from os import name
 from common_utils import make_request
 import traceback
@@ -31,6 +32,26 @@ def get_teacher_info(ldap, cookies):
         print(f"详细错误信息: {traceback.format_exc()}")
         raise
 
+def get_department(id, cookies):
+    try:
+        url = f"https://tutor.zhenguanyu.com/tutor-hermes-gateway/api/department/{id}"
+        response = make_request(url, cookies)
+        if response.status_code != 200:
+            raise Exception(f"获取部门信息失败: HTTP {response.status_code}")
+        department_data = response.json()
+        absolutePath = department_data.get('absolutePath','')
+        manager = department_data.get('manager','')
+        department = {
+            'manager': manager,
+            'absolutePath': absolutePath
+        }
+        return department
+    except Exception as e:
+        print(f"获取部门信息时发生错误: {e}")
+        print(f"详细错误信息: {traceback.format_exc()}")
+        raise
+
+
 def get_mentor_info(ldap, cookies):
     """获取上级信息"""
     try:
@@ -44,7 +65,7 @@ def get_mentor_info(ldap, cookies):
 
         mentor_data = response.json()
         mentor_info = {
-            'positionName': mentor_data.get('positionLevels','')[0].get('name',''),
+            'positionLevels': mentor_data.get('positionLevels',[]),
             'mentor_ldap': mentor_data.get('directLeaderLdap',''),
             'mentor_path': mentor_data.get('displayAbsolutePath','')
         }
@@ -86,37 +107,32 @@ def mentor_search(ldap, cookies):
         teacher_text += f"- 电话：{teacher_info['phone']}\n"
         teacher_text += f"- LDAP：{ldap}\n\n"
         mentor_text = f"部门名称：{teacher_info['absolutePath']}\n\n"
+        mentor_text += f"部门管理者：{teacher_info['managerLdap']}"
+
         
-
-        mentor_1 = teacher_info['managerLdap']
-        mentor_1_info = get_mentor_info(mentor_1, cookies)
-        mentor_text += f"部门管理者：{mentor_1}"
         if teacher_info['isGroup']:
-            mentor_text += "（组长）\n\n"
+            mentor_text += "（组长）"
         else:
-            mentor_text += f"({mentor_1_info['positionName']})\n\n"
-
-        error_messages = []
-        if teacher_info['isGroup'] or ldap == mentor_1:
-            try:
-                print("正在获取主管信息...")
-                mentor_1_info = get_mentor_info(mentor_1, cookies)
-                if mentor_1_info:
-                    mentor_2 = mentor_1_info['mentor_ldap']
-                    mentor_2_info = get_mentor_info(mentor_2, cookies)
-                    print(f"+2信息获取成功: {mentor_1_info}")
-                    mentor_text += f"直属上级：{mentor_2}"
-                    mentor_text += f" ({mentor_2_info['positionName']})\n\n"
-                else:
-                    error_messages.append("获取主管信息失败")
-            except Exception as e:
-                print(f"获取主管信息失败: {e}")
-                error_messages.append(f'获取主管信息失败: {str(e)}')
+            mentor_text += f"({mentor_1_info['positionLevels'][0].get('name','')})"
+        
+        departmentId = teacher_info['departmentId']
+        department_info = get_department(departmentId, cookies)
+        parent_department = department_info['absolutePath'][-2]
+        print(f'上级部门ID:{parent_department}')
+        parent_department_info = get_department(parent_department, cookies)
+        parent_manager = parent_department_info['manager']["ldap"]
+        print(f"+2信息获取成功: {parent_manager}")
+        mentor_text += f"\n\n直属上级：{parent_manager}"
+        parent_manager_info = get_mentor_info(parent_manager, cookies)
+        print(f"+2信息: {parent_manager_info}")
+        position_levels = parent_manager_info.get('positionLevels', [])
+        level_name = position_levels[0].get('name', '') if position_levels else ''
+        if level_name:
+            mentor_text += f" ({level_name})\n\n"
 
         response_data['teacher_text'] = teacher_text
         response_data['mentor_text'] = mentor_text
 
-        print("查询完成，返回结果")
         return response_data
 
     except Exception as e:
